@@ -3,7 +3,20 @@
   root-package = "github.com/heroku/heroku-local-build"
   install = [ "./cmd/..." ]
 
+ignored = [
+  "github.com/sclevine/forge",
+  "github.com/sclevine/forge/*",
+]
+
 # App
+
+[[constraint]]
+  name = "github.com/fsnotify/fsevents"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsnotify"
+  branch = "master"
 
 [prune]
   go-tests = true
