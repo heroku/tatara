@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"runtime/pprof"
 
-	"github.com/heroku/heroku-local/cli"
+	"github.com/heroku/heroku-local-build/cli"
 )
 
 func main() {

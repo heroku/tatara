@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/heroku/heroku-local/cli"
+	"github.com/heroku/heroku-local-build/cli"
 )
 
 var cmdRun = cli.Command{
