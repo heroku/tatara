@@ -21,6 +21,21 @@ const (
 var cmdBuild = cli.Command{
 	Name: "build",
 
+	Flags: []cli.Flag{
+		cli.StringSliceFlag{
+			Name:  "buildpack",
+			Usage: "A buildpack to use on this app",
+		},
+		cli.StringFlag{
+			Name:  "stack",
+			Usage: "The name of the packs stack image to use",
+		},
+		cli.BoolFlag{
+			Name:  "skip-stack-pull",
+			Usage: "Use a local stack image only",
+		},
+	},
+
 	Run: func(c *cli.Context) (int, error) {
 		if len(c.Args) != 2 {
 			fmt.Fprint(c.App.UserErr, "required arguments: <app directory> <app name>")
@@ -29,11 +44,14 @@ var cmdBuild = cli.Command{
 
 		appDir := filepath.Clean(c.Args[0])
 		appName := filepath.Clean(c.Args[1])
+		buildpacks := c.Flags.StringSlice("buildpack")
 
-		// TODO add options for:
-		//  - BuildStack name
-		//  - buildpack URLs/names
-		//  - SkipStackPull (default false)
+		stack := c.Flags.String("stack")
+		if stack == "" {
+			stack = BuildStack
+		}
+
+		skipStackPull := c.Flags.Bool("skip-stack-pull")
 
 		engine, err := docker.New(&engine.EngineConfig{})
 		if err != nil {
@@ -61,7 +79,7 @@ var cmdBuild = cli.Command{
 
 		var app = &forge.AppConfig{
 			Name: appName,
-			Buildpack: "",
+			Buildpacks: buildpacks,
 		}
 
 		slug, err := stager.Stage(&forge.StageConfig{
@@ -69,12 +87,11 @@ var cmdBuild = cli.Command{
 			Cache:         cache,
 			CacheEmpty:    cacheSize == 0,
 			BuildpackZips: nil,
-			Stack:         BuildStack,
-			ForceDetect:   true,
+			Stack:         stack,
 			Color:         color.GreenString,
 			AppConfig:     app,
 			OutputFile:    "slug.tgz",
-			SkipStackPull: true,
+			SkipStackPull: skipStackPull,
 		})
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
