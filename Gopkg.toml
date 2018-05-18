@@ -1,0 +1,10 @@
+[metadata.heroku]
+  go-version = "go1.10"
+  root-package = "github.com/heroku/heroku-local"
+  install = [ "./cmd/..." ]
+
+# App
+
+[prune]
+  go-tests = true
+  unused-packages = true
