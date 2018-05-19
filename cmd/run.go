@@ -90,6 +90,7 @@ var cmdRun = cli.Command{
 			AppConfig:     app,
 			SkipStackPull: skipStackPull,
 			NetworkConfig: netConfig,
+			HomeDir:       "/",
 		})
 
 		if err != nil {
