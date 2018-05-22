@@ -1,8 +1,3 @@
-[metadata.heroku]
-  go-version = "go1.10"
-  root-package = "github.com/heroku/heroku-local-build"
-  install = [ "./cmd/..." ]
-
 ignored = [
   "github.com/sclevine/forge",
   "github.com/sclevine/forge/*",
