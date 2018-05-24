@@ -26,6 +26,8 @@ type App struct {
 	InternalOut io.Writer
 
 	Before func(c *Context) error
+
+	Exit 		<-chan struct{}
 }
 
 // Run executed the command with the provided arguments
@@ -55,6 +57,7 @@ func (a *App) Run(args []string) (int, error) {
 		Command:     command,
 		Flags:       flagSet,
 		Args:        flagSet.Args(),
+		Exit:        a.Exit,
 	}
 
 	if a.Before != nil {

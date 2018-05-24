@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"errors"
+	"strconv"
 
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
@@ -11,7 +12,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/heroku/heroku-local-build/cli"
 	"github.com/heroku/heroku-local-build/fs"
-	"strconv"
 )
 
 const (
@@ -68,7 +68,9 @@ var cmdRun = cli.Command{
 			Name: appName,
 		}
 
-		engine, err := docker.New(&engine.EngineConfig{})
+		engine, err := docker.New(&engine.EngineConfig{
+			Exit: c.Exit,
+		})
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
@@ -90,7 +92,7 @@ var cmdRun = cli.Command{
 			AppConfig:     app,
 			SkipStackPull: skipStackPull,
 			NetworkConfig: netConfig,
-			HomeDir:       "/",
+			RootDir:       "/",
 		})
 
 		if err != nil {

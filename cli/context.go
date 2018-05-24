@@ -7,4 +7,5 @@ type Context struct {
 	Command     *Command
 	Flags       *FlagSet
 	Args        []string
+	Exit 		<-chan struct{}
 }

@@ -53,7 +53,9 @@ var cmdBuild = cli.Command{
 
 		skipStackPull := c.Flags.Bool("skip-stack-pull")
 
-		engine, err := docker.New(&engine.EngineConfig{})
+		engine, err := docker.New(&engine.EngineConfig{
+			Exit: c.Exit,
+		})
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
