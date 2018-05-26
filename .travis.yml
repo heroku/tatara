@@ -12,7 +12,6 @@ install:
 before_script:
 - export VERSION="$(cat VERSION)"
 script:
-- test -z "$(bin/format | tee >(cat >&2))"
 - bin/test
 - bin/build
 deploy:
