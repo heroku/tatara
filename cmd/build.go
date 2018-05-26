@@ -4,7 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"errors"
+	"os"
+	"io/ioutil"
 
+	"gopkg.in/yaml.v2"
+	"github.com/heroku/heroku-local-build/heroku"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
@@ -52,6 +56,16 @@ var cmdBuild = cli.Command{
 		}
 
 		skipStackPull := c.Flags.Bool("skip-stack-pull")
+
+		if _, err := os.Stat("heroku.yml"); os.IsNotExist(err) {
+			configBytes, err := ioutil.ReadFile("heroku.yml")
+			if err == nil {
+				var herokuConfig heroku.Config
+				yaml.Unmarshal(configBytes, &herokuConfig)
+
+				buildpacks = herokuConfig.Build.Buildpacks
+			}
+		}
 
 		engine, err := docker.New(&engine.EngineConfig{
 			Exit: c.Exit,
