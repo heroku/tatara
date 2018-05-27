@@ -13,6 +13,7 @@ install:
 - go get github.com/sclevine/forge
 - ( cd "$GOPATH/src/github.com/sclevine/forge" && git remote add fork https://github.com/jkutner/forge )
 - ( cd "$GOPATH/src/github.com/sclevine/forge" && git reset --hard fork/master )
+- ( cd "$GOPATH/src/github.com/sclevine/forge" && git fetch fork )
 - ( cd "$GOPATH/src/github.com/sclevine/forge" && dep ensure )
 before_script:
 - export VERSION="$(cat VERSION)"
