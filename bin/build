@@ -16,7 +16,7 @@ out_file() {
 
 build() {
   local platform=${1}
-  local version=${1:-$(<VERSION)}
+  local version=$(<VERSION)
 
   echo "Building for ${platform}..."
   GOOS=${platform} go build -ldflags "-X main.Version=$version" -o "out/heroku-local-$version-$(out_file $platform)" ./cmd/...
