@@ -6,15 +6,16 @@ go:
 - 1.10.x
 go_import_path: github.com/heroku/heroku-local-build
 install:
-- set -e
-- if [ -n "$DEP_INSTALL_CMD" ]; eval $DEP_INSTALL_CMD; else curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64"; fi
-- chmod +x "$GOPATH/bin/dep"
+- mkdir -p $GOPATH/bin
+- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - dep ensure
 - go get github.com/sclevine/forge
-- ( cd "$GOPATH/src/github.com/sclevine/forge" && git remote add fork https://github.com/jkutner/forge )
-- ( cd "$GOPATH/src/github.com/sclevine/forge" && git fetch fork )
-- ( cd "$GOPATH/src/github.com/sclevine/forge" && git reset --hard fork/master )
-- ( cd "$GOPATH/src/github.com/sclevine/forge" && dep ensure )
+- cd $GOPATH/src/github.com/sclevine/forge
+- git remote add fork https://github.com/jkutner/forge
+- git fetch fork
+- git reset --hard fork/master
+- dep ensure
+- cd -
 before_script:
 - export VERSION="$(cat VERSION)"
 script:
@@ -25,21 +26,20 @@ matrix:
   - os: linux
     env:
       TARGET_OS: windows
-      OUTPUT_FILE: windows.exe
+      OUTPUT_EXT: windows.exe
   - os: linux
     env:
       TARGET_OS: linux
-      OUTPUT_FILE: linux
+      OUTPUT_EXT: linux
   - os: osx
     env:
       TARGET_OS: darwin
-      OUTPUT_FILE: macos
-      DEP_INSTALL_CMD: brew install dep
+      OUTPUT_EXT: macos
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
   file:
-    - "out/heroku-local-${VERSION}-${OUTPUT_FILE}"
+    - "out/heroku-local-${VERSION}-${OUTPUT_EXT}"
   skip_cleanup: true
   on:
     tags: true
