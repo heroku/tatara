@@ -7,7 +7,7 @@ go:
 go_import_path: github.com/heroku/heroku-local-build
 install:
 - set -e
-- curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64"
+- if [ -n "$DEP_INSTALL_CMD" ]; eval $DEP_INSTALL_CMD; else curl -fsSLo "$GOPATH/bin/dep" "https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64"; fi
 - chmod +x "$GOPATH/bin/dep"
 - dep ensure
 - go get github.com/sclevine/forge
@@ -19,18 +19,27 @@ before_script:
 - export VERSION="$(cat VERSION)"
 script:
 - bin/test
-- bin/build
+- bin/build $TARGET_OS
 matrix:
   include:
   - os: linux
+    env:
+      TARGET_OS: windows
+      OUTPUT_FILE: windows.exe
+  - os: linux
+    env:
+      TARGET_OS: linux
+      OUTPUT_FILE: linux
   - os: osx
+    env:
+      TARGET_OS: darwin
+      OUTPUT_FILE: macos
+      DEP_INSTALL_CMD: brew install dep
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
   file:
-    - "out/heroku-local-${VERSION}-macos"
-    - "out/heroku-local-${VERSION}-linux"
-    - "out/heroku-local-${VERSION}-windows"
+    - "out/heroku-local-${VERSION}-${OUTPUT_FILE}"
   skip_cleanup: true
   on:
     tags: true

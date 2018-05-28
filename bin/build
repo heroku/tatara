@@ -2,15 +2,35 @@
 
 set -e
 
+out_file() {
+  if [ "$1" == "darwin" ]; then
+    echo -n "macos"
+  elif [ "$1" == "darwin" ]; then
+    echo -n "macos"
+  elif [ "$1" == "windows" ]; then
+    echo -n "windows.exe"
+  else
+    echo -n "$1"
+  fi
+}
+
+build() {
+  local platform=${1}
+  local version=${1:-$(<VERSION)}
+
+  echo "Building for ${platform}..."
+  GOOS=${platform} go build -ldflags "-X main.Version=$version" -o "out/heroku-local-$version-$(out_file $platform)" ./cmd/...
+}
+
 cd $(dirname "${BASH_SOURCE[0]}")/..
 
 mkdir -p out
 
-os_list=(darwin linux windows)
-out_list=(macos linux windows.exe)
-version=${1:-$(<VERSION)}
-
-for ((i=0; i < ${#os_list[@]}; i++)); do
-  echo "Building for ${os_list[i]}..."
-  GOOS=${os_list[i]} go build -ldflags "-X main.Version=$version" -o "out/heroku-local-$version-${out_list[i]}" ./cmd/...
-done
+if [ -n "$1" ]; then
+  build $1
+else
+  os_list=(darwin linux windows)
+  for ((i=0; i < ${#os_list[@]}; i++)); do
+    build ${os_list[i]}
+  done
+fi
