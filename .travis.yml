@@ -20,6 +20,10 @@ before_script:
 script:
 - bin/test
 - bin/build
+matrix:
+  include:
+  - os: linux
+  - os: osx
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
