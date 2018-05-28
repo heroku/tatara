@@ -21,6 +21,7 @@ before_script:
 script:
 - bin/test
 - bin/build $TARGET_OS
+- ls out/
 matrix:
   include:
   - os: linux
