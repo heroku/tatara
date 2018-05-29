@@ -39,6 +39,7 @@ var cmdRun = cli.Command{
 	Run: func(c *cli.Context) (int, error) {
 		if len(c.Args) != 1 {
 			fmt.Fprint(c.App.UserErr, "required arguments: <app name>")
+			fmt.Println("")
 			return cli.ExitStatusInvalidArgs, errors.New("invalid arguments")
 		}
 
