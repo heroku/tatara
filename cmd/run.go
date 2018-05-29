@@ -79,12 +79,13 @@ var cmdRun = cli.Command{
 		netConfig := &forge.NetworkConfig{
 			HostIP:   "127.0.0.1",
 			HostPort: strconv.FormatUint(uint64(port), 10),
+			Port:     strconv.FormatUint(uint64(port), 10),
 		}
 
 		runner := forge.NewRunner(engine)
 		runner.Logs = color.Output
 
-		fmt.Sprintf("Running %s on port %d...", appName, port)
+		fmt.Println(fmt.Sprintf("Running %s on port %d...", appName, port))
 		_, err = runner.Run(&forge.RunConfig{
 			Droplet:       slug,
 			Stack:         RunStack,
