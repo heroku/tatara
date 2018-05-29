@@ -5,8 +5,6 @@ set -e
 out_file() {
   if [ "$1" == "darwin" ]; then
     echo -n "macos"
-  elif [ "$1" == "darwin" ]; then
-    echo -n "macos"
   elif [ "$1" == "windows" ]; then
     echo -n "windows.exe"
   else

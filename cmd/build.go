@@ -57,8 +57,10 @@ var cmdBuild = cli.Command{
 
 		skipStackPull := c.Flags.Bool("skip-stack-pull")
 
-		if _, err := os.Stat("heroku.yml"); os.IsNotExist(err) {
-			configBytes, err := ioutil.ReadFile("heroku.yml")
+		herokuYamlFile := filepath.Join(appDir, "heroku.yml")
+		_, err := os.Stat(herokuYamlFile)
+		if err == nil {
+			configBytes, err := ioutil.ReadFile(herokuYamlFile)
 			if err == nil {
 				var herokuConfig heroku.Config
 				yaml.Unmarshal(configBytes, &herokuConfig)
