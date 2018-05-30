@@ -13,7 +13,7 @@ install:
 - cd $GOPATH/src/github.com/sclevine/forge
 - git remote add fork https://github.com/jkutner/forge
 - git fetch fork
-- git reset --hard fork/master
+- git reset --hard fork/refactor-jkutner
 - dep ensure
 - cd -
 before_script:
