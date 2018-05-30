@@ -10,6 +10,7 @@ import (
 	"github.com/heroku/heroku-local-build/fs"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine/docker"
+	"github.com/heroku/heroku-local-build/ui"
 )
 
 var cmdExport = cli.Command{
@@ -49,10 +50,13 @@ var cmdExport = cli.Command{
 		}
 
 		sysFS := &fs.FS{}
-		slugFile, slugSize, err := sysFS.ReadFile(fmt.Sprintf("./%s.slug", appName))
+		slugFilename := fmt.Sprintf("./%s.slug", appName)
+		slugFile, slugSize, err := sysFS.ReadFile(slugFilename)
 		if err != nil {
+			fmt.Fprintln(c.App.UserErr, fmt.Sprintf("Could not read slug file: %s", slugFilename))
 			return cli.ExitStatusInvalidArgs, err
 		}
+
 		slug := engine.NewStream(slugFile, slugSize)
 		defer slug.Close()
 
@@ -63,20 +67,32 @@ var cmdExport = cli.Command{
 			return cli.ExitStatusUnknownError, err
 		}
 		defer engine.Close()
+
+		if !c.Flags.Bool("skip-stack-pull") {
+			err := ui.Loading("Downloading Runtime Image", engine.NewImage().Pull(stack))
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+		}
+
 		exporter := forge.NewExporter(engine)
 
 		id, err := exporter.Export(&forge.ExportConfig{
 			Droplet:   slug,
 			Stack:     RunStack,
-			Ref:       appName,
-			AppConfig: &forge.AppConfig{},
+			Ref:       tag,
+			RootPath:  "/",
+			HomePath:  "app",
+			AppConfig: &forge.AppConfig{
+				Name: appName,
+			},
 		})
 
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
 
-		fmt.Println("Exported as %s with ID: %s", appName, id)
+		fmt.Fprintln(c.App.UserOut, fmt.Sprintf("Exported image %s with ID: %s", tag, id))
 
 		return cli.ExitStatusSuccess, nil
 	},
