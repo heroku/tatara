@@ -43,6 +43,7 @@ func runApp() int {
 		Commands: []cli.Command{
 			cmdBuild,
 			cmdRun,
+			cmdExport,
 		},
 
 		Flags: []cli.Flag{

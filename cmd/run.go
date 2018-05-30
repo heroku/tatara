@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/heroku/heroku-local-build/cli"
 	"github.com/heroku/heroku-local-build/fs"
+	"github.com/heroku/heroku-local-build/ui"
 )
 
 const (
@@ -38,8 +39,7 @@ var cmdRun = cli.Command{
 
 	Run: func(c *cli.Context) (int, error) {
 		if len(c.Args) != 1 {
-			fmt.Fprint(c.App.UserErr, "required arguments: <app name>")
-			fmt.Println("")
+			fmt.Fprintln(c.App.UserErr, "required arguments: <app name>")
 			return cli.ExitStatusInvalidArgs, errors.New("invalid arguments")
 		}
 
@@ -54,8 +54,6 @@ var cmdRun = cli.Command{
 		if port == 0 {
 			port = 5000
 		}
-
-		skipStackPull := c.Flags.Bool("skip-stack-pull")
 
 		sysFS := &fs.FS{}
 		slugFile, slugSize, err := sysFS.ReadFile(fmt.Sprintf("./%s.slug", appName))
@@ -77,6 +75,13 @@ var cmdRun = cli.Command{
 		}
 		defer engine.Close()
 
+		if !c.Flags.Bool("skip-stack-pull") {
+			err = ui.Loading("Downloading Runtime Image", engine.NewImage().Pull(stack))
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+		}
+
 		netConfig := &forge.NetworkConfig{
 			HostIP:   "127.0.0.1",
 			HostPort: strconv.FormatUint(uint64(port), 10),
@@ -92,9 +97,8 @@ var cmdRun = cli.Command{
 			Stack:         RunStack,
 			Color:         color.GreenString,
 			AppConfig:     app,
-			SkipStackPull: skipStackPull,
 			NetworkConfig: netConfig,
-			RootDir:       "/",
+			RootPath:      "/",
 		})
 
 		if err != nil {

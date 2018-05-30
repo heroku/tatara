@@ -16,6 +16,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/heroku/heroku-local-build/cli"
 	"github.com/heroku/heroku-local-build/fs"
+	"github.com/heroku/heroku-local-build/ui"
 )
 
 const (
@@ -42,8 +43,7 @@ var cmdBuild = cli.Command{
 
 	Run: func(c *cli.Context) (int, error) {
 		if len(c.Args) != 2 {
-			fmt.Fprint(c.App.UserErr, "required arguments: <app directory> <app name>")
-			fmt.Println("")
+			fmt.Fprintln(c.App.UserErr, "required arguments: <app directory> <app name>")
 			return cli.ExitStatusInvalidArgs, errors.New("invalid arguments")
 		}
 
@@ -55,8 +55,6 @@ var cmdBuild = cli.Command{
 		if stack == "" {
 			stack = BuildStack
 		}
-
-		skipStackPull := c.Flags.Bool("skip-stack-pull")
 
 		herokuYamlFile := filepath.Join(appDir, "heroku.yml")
 		_, err := os.Stat(herokuYamlFile)
@@ -80,10 +78,16 @@ var cmdBuild = cli.Command{
 
 		stager := forge.NewStager(engine)
 
+		if !c.Flags.Bool("skip-stack-pull") {
+			err = ui.Loading("Downloading Build Image", engine.NewImage().Pull(stack))
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+		}
+
 		slugPath := fmt.Sprintf("./%s.slug", appName)
 		cachePath := fmt.Sprintf("./.%s.cache", appName)
-
-		appTar, err := app.Tar(appDir)
+		appTar, err := app.Tar(appDir, `^.+\.slug$`, `^\..+\.cache$`)
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
@@ -109,8 +113,7 @@ var cmdBuild = cli.Command{
 			Stack:         stack,
 			Color:         color.GreenString,
 			AppConfig:     app,
-			OutputFile:    "slug.tgz",
-			SkipStackPull: skipStackPull,
+			OutputPath:    "/out/slug.tgz",
 		})
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
