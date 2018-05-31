@@ -64,11 +64,8 @@ var cmdBuild = cli.Command{
 			if err == nil {
 				var herokuConfig heroku.Config
 				yaml.Unmarshal(configBytes, &herokuConfig)
-
 				rawBuildpacks := herokuConfig.Build.Buildpacks
-
 				buildpacks = make([]string, len(rawBuildpacks))
-
 				for i, buildpack := range rawBuildpacks {
 					if strings.HasPrefix(buildpack, "https://") || strings.HasPrefix(buildpack, "http://"){
 						buildpacks[i] = buildpack
