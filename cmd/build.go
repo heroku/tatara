@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"io/ioutil"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 	"github.com/heroku/heroku-local-build/heroku"
@@ -64,7 +65,17 @@ var cmdBuild = cli.Command{
 				var herokuConfig heroku.Config
 				yaml.Unmarshal(configBytes, &herokuConfig)
 
-				buildpacks = herokuConfig.Build.Buildpacks
+				rawBuildpacks := herokuConfig.Build.Buildpacks
+
+				buildpacks = make([]string, len(rawBuildpacks))
+
+				for i, buildpack := range rawBuildpacks {
+					if strings.HasPrefix(buildpack, "https://") || strings.HasPrefix(buildpack, "http://"){
+						buildpacks[i] = buildpack
+					} else {
+						buildpacks[i] = fmt.Sprintf("https://buildpack-registry.s3.amazonaws.com/buildpacks/%s.tgz", buildpack)
+					}
+				}
 			}
 		}
 
