@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"os/signal"
 
-	"github.com/heroku/heroku-local-build/cli"
+	"github.com/heroku/tatara/cli"
 )
 
 func main() {

@@ -4,7 +4,7 @@ services:
 - docker
 go:
 - 1.10.x
-go_import_path: github.com/heroku/heroku-local-build
+go_import_path: github.com/heroku/tatara
 install:
 - mkdir -p $GOPATH/bin
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -40,7 +40,7 @@ deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
   file:
-    - "out/heroku-local-${VERSION}-${OUTPUT_EXT}"
+    - "out/tatara-${VERSION}-${OUTPUT_EXT}"
   skip_cleanup: true
   on:
     tags: true

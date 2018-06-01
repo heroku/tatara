@@ -17,7 +17,7 @@ build() {
   local version=$(<VERSION)
 
   echo "Building for ${platform}..."
-  GOOS=${platform} go build -ldflags "-X main.Version=$version" -o "out/heroku-local-$version-$(out_file $platform)" ./cmd/...
+  GOOS=${platform} go build -ldflags "-X main.Version=$version" -o "out/tatara-$version-$(out_file $platform)" ./cmd/...
 }
 
 cd $(dirname "${BASH_SOURCE[0]}")/..

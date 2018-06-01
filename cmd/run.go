@@ -10,9 +10,9 @@ import (
 	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/engine/docker"
 	"github.com/fatih/color"
-	"github.com/heroku/heroku-local-build/cli"
-	"github.com/heroku/heroku-local-build/fs"
-	"github.com/heroku/heroku-local-build/ui"
+	"github.com/heroku/tatara/cli"
+	"github.com/heroku/tatara/fs"
+	"github.com/heroku/tatara/ui"
 )
 
 const (
