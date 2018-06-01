@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"errors"
-	"os"
+	"context"
+	"bytes"
+	"archive/tar"
 	"io/ioutil"
-	"strings"
-
 	"gopkg.in/yaml.v2"
+	
 	"github.com/heroku/tatara/heroku"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
@@ -18,6 +19,8 @@ import (
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/ui"
+	"github.com/docker/docker/api/types"
+	dockerClient "github.com/docker/docker/client"
 )
 
 const (
@@ -57,24 +60,6 @@ var cmdBuild = cli.Command{
 			stack = BuildStack
 		}
 
-		herokuYamlFile := filepath.Join(appDir, "heroku.yml")
-		_, err := os.Stat(herokuYamlFile)
-		if err == nil {
-			configBytes, err := ioutil.ReadFile(herokuYamlFile)
-			if err == nil {
-				var herokuConfig heroku.Config
-				yaml.Unmarshal(configBytes, &herokuConfig)
-				rawBuildpacks := herokuConfig.Build.Buildpacks
-				buildpacks = make([]string, len(rawBuildpacks))
-				for i, buildpack := range rawBuildpacks {
-					if strings.HasPrefix(buildpack, "https://") || strings.HasPrefix(buildpack, "http://"){
-						buildpacks[i] = buildpack
-					} else {
-						buildpacks[i] = fmt.Sprintf("https://buildpack-registry.s3.amazonaws.com/buildpacks/%s.tgz", buildpack)
-					}
-				}
-			}
-		}
 
 		engine, err := docker.New(&engine.EngineConfig{
 			Exit: c.Exit,
@@ -87,10 +72,28 @@ var cmdBuild = cli.Command{
 		stager := forge.NewStager(engine)
 
 		if !c.Flags.Bool("skip-stack-pull") {
-			err = ui.Loading("Downloading Build Image", engine.NewImage().Pull(stack))
+			err := ui.Loading("Downloading Build Image", engine.NewImage().Pull(stack))
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
+		}
+
+		herokuConfig, err := heroku.ReadConfig(appDir)
+		if err == nil {
+			if len(herokuConfig.Build.Buildpacks) > 0 {
+				buildpacks = herokuConfig.ResolveBuildpacks()
+			}
+
+			dockerfile := herokuConfig.ConstructDockerfile(stack)
+			fmt.Println(dockerfile)
+
+			// TODO give the image a random uuid tag and serialize it so we can use it for run and export
+			err = buildImage(appName, dockerfile)
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+
+			stack = appName
 		}
 
 		slugPath := fmt.Sprintf("./%s.slug", appName)
@@ -146,4 +149,49 @@ func streamOut(fs fs.FS, stream engine.Stream, path string) error {
 	}
 	defer file.Close()
 	return stream.Out(file)
+}
+
+func buildImage(appName, dockerfile string) error {
+	fmt.Println(fmt.Sprintf("Building %s", appName))
+
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	dockerfileBytes := []byte(dockerfile)
+	tarHeader := &tar.Header{
+		Name: "Dockerfile",
+		Size: int64(len(dockerfileBytes)),
+	}
+	err := tw.WriteHeader(tarHeader)
+	if err != nil {
+		return err
+	}
+	_, err = tw.Write(dockerfileBytes)
+	if err != nil {
+		return err
+	}
+	dockerFileTarReader := bytes.NewReader(buf.Bytes())
+
+	buildOptions := types.ImageBuildOptions{
+		Tags:       []string{appName},
+		Dockerfile: "Dockerfile",
+	}
+	client, err := dockerClient.NewEnvClient()
+	if err != nil {
+		return err
+	}
+
+	buildResponse, err := client.ImageBuild(context.Background(), dockerFileTarReader, buildOptions)
+	if err != nil {
+		return fmt.Errorf("error starting build: %v", err)
+	}
+	response, err := ioutil.ReadAll(buildResponse.Body)
+	if err != nil {
+		return err
+	}
+	buildResponse.Body.Close()
+
+	fmt.Println(string(response))
+	return nil
 }
