@@ -111,6 +111,9 @@ var cmdBuild = cli.Command{
 		var app = &forge.AppConfig{
 			Name: appName,
 			Buildpacks: buildpacks,
+			StagingEnv: map[string]string{
+				"STACK": stack,
+			},
 		}
 
 		slug, err := stager.Stage(&forge.StageConfig{
