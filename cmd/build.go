@@ -83,18 +83,21 @@ var cmdBuild = cli.Command{
 				buildpacks = herokuConfig.ResolveBuildpacks()
 			}
 
-			dockerfile := herokuConfig.ConstructDockerfile(stack)
-			fmt.Println(dockerfile)
-
-			imageName := herokuConfig.Id
-
-			fmt.Println(fmt.Sprintf("Building image: %s", imageName))
-			err = buildImage(imageName, dockerfile)
+			runDockerfile := herokuConfig.ConstructDockerfile(RunStack)
+			runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
+			err = buildImage(runImageName, runDockerfile)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 
-			stack = imageName
+			buildDockerfile := herokuConfig.ConstructDockerfile(stack)
+			buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
+			err = buildImage(buildImageName, buildDockerfile)
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+
+			stack = buildImageName
 		}
 
 		slugPath := fmt.Sprintf("./%s.slug", appName)

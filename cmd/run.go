@@ -90,7 +90,7 @@ var cmdRun = cli.Command{
 
 		herokuConfig, err := heroku.ReadConfig(curDir)
 		if err == nil {
-			imageName := herokuConfig.Id
+			imageName := fmt.Sprintf("%s:run", herokuConfig.Id)
 			fmt.Println(fmt.Sprintf("Using image: %s", imageName))
 			stack = imageName
 		}
