@@ -7,10 +7,13 @@ import (
 	"gopkg.in/yaml.v2"
 	"strings"
 	"fmt"
+	"crypto/sha256"
+	"encoding/base32"
 )
 
 type Config struct {
-	Build BuildConfig
+	Build  BuildConfig
+	Id     string
 }
 
 type BuildConfig struct {
@@ -29,6 +32,12 @@ func ReadConfig(appDir string) (Config, error) {
 		if err == nil {
 			var herokuConfig Config
 			yaml.Unmarshal(configBytes, &herokuConfig)
+
+			hasher := sha256.New()
+			hasher.Write(configBytes)
+			sha := strings.ToLower(base32.HexEncoding.EncodeToString(hasher.Sum(nil)))
+			herokuConfig.Id = strings.Replace(sha, "=", "x", -1)
+
 			return herokuConfig, nil
 		}
 	}
@@ -61,9 +70,8 @@ RUN apt-get update`)
 		dockerfile += fmt.Sprintf(`
 RUN apt-get install %s -y`, aptPackage)
 	}
-	for _, command := range c.Build.Post {
-		dockerfile += fmt.Sprintf(`
-RUN %s`, command)
+	if len(c.Build.Post) > 0 {
+		fmt.Println("Warning: `post` steps in heroku.yml are not supported!")
 	}
 	return dockerfile
 }

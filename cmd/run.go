@@ -13,6 +13,8 @@ import (
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/ui"
+	"github.com/heroku/tatara/heroku"
+	"os"
 )
 
 const (
@@ -81,6 +83,17 @@ var cmdRun = cli.Command{
 				return cli.ExitStatusUnknownError, err
 			}
 		}
+		curDir, err := os.Getwd()
+		if err != nil {
+			return cli.ExitStatusUnknownError, err
+		}
+
+		herokuConfig, err := heroku.ReadConfig(curDir)
+		if err == nil {
+			imageName := herokuConfig.Id
+			fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			stack = imageName
+		}
 
 		netConfig := &forge.NetworkConfig{
 			HostIP:   "127.0.0.1",
@@ -94,7 +107,7 @@ var cmdRun = cli.Command{
 		fmt.Println(fmt.Sprintf("Running %s on port %d...", appName, port))
 		_, err = runner.Run(&forge.RunConfig{
 			Droplet:       slug,
-			Stack:         RunStack,
+			Stack:         stack,
 			Color:         color.GreenString,
 			AppConfig:     app,
 			NetworkConfig: netConfig,

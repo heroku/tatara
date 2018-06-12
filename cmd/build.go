@@ -8,8 +8,7 @@ import (
 	"bytes"
 	"archive/tar"
 	"io/ioutil"
-	"gopkg.in/yaml.v2"
-	
+
 	"github.com/heroku/tatara/heroku"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
@@ -87,13 +86,15 @@ var cmdBuild = cli.Command{
 			dockerfile := herokuConfig.ConstructDockerfile(stack)
 			fmt.Println(dockerfile)
 
-			// TODO give the image a random uuid tag and serialize it so we can use it for run and export
-			err = buildImage(appName, dockerfile)
+			imageName := herokuConfig.Id
+
+			fmt.Println(fmt.Sprintf("Building image: %s", imageName))
+			err = buildImage(imageName, dockerfile)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 
-			stack = appName
+			stack = imageName
 		}
 
 		slugPath := fmt.Sprintf("./%s.slug", appName)
