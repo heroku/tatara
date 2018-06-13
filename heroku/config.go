@@ -1,19 +1,19 @@
 package heroku
 
 import (
-	"path/filepath"
-	"os"
-	"io/ioutil"
-	"gopkg.in/yaml.v2"
-	"strings"
-	"fmt"
 	"crypto/sha256"
 	"encoding/base32"
+	"fmt"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Config struct {
-	Build  BuildConfig
-	Id     string
+	Build BuildConfig
+	Id    string
 }
 
 type BuildConfig struct {
@@ -47,7 +47,7 @@ func ReadConfig(appDir string) (Config, error) {
 func (c *Config) ResolveBuildpacks() []string {
 	buildpacks := make([]string, len(c.Build.Buildpacks))
 	for i, buildpack := range c.Build.Buildpacks {
-		if strings.HasPrefix(buildpack, "https://") || strings.HasPrefix(buildpack, "http://"){
+		if strings.HasPrefix(buildpack, "https://") || strings.HasPrefix(buildpack, "http://") {
 			buildpacks[i] = buildpack
 		} else {
 			buildpacks[i] = fmt.Sprintf("https://buildpack-registry.s3.amazonaws.com/buildpacks/%s.tgz", buildpack)
@@ -57,7 +57,7 @@ func (c *Config) ResolveBuildpacks() []string {
 }
 
 func (c *Config) ConstructDockerfile(stack string) string {
-	dockerfile := fmt.Sprintf("FROM %s", stack);
+	dockerfile := fmt.Sprintf("FROM %s", stack)
 	for _, command := range c.Build.Pre {
 		dockerfile += fmt.Sprintf(`
 RUN %s`, command)

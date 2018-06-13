@@ -1,25 +1,25 @@
 package main
 
 import (
-	"fmt"
-	"path/filepath"
 	"errors"
-	"strconv"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/engine/docker"
 	"github.com/fatih/color"
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
-	"github.com/heroku/tatara/ui"
 	"github.com/heroku/tatara/heroku"
+	"github.com/heroku/tatara/ui"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/engine/docker"
 )
 
 const (
-	RunStack   = "packs/heroku-16:run"
+	RunStack = "packs/heroku-16:run"
 )
 
 var cmdRun = cli.Command{
@@ -85,7 +85,7 @@ var cmdRun = cli.Command{
 		defer slug.Close()
 
 		app := &forge.AppConfig{
-			Name: appName,
+			Name:       appName,
 			RunningEnv: envVars,
 		}
 

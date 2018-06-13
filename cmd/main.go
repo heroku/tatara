@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"fmt"
+	"os/signal"
 	"runtime/pprof"
 	"syscall"
-	"os/signal"
 
 	"github.com/heroku/tatara/cli"
 )
@@ -38,7 +38,7 @@ func runApp() int {
 		UserOut:     os.Stdout,
 		UserErr:     os.Stderr,
 		InternalOut: os.Stderr,
-		Exit:   	 exitChan,
+		Exit:        exitChan,
 
 		Commands: []cli.Command{
 			cmdBuild,
