@@ -1,29 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"path/filepath"
-	"errors"
-	"context"
-	"bytes"
 	"archive/tar"
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/docker/docker/api/types"
+	dockerClient "github.com/docker/docker/client"
+	"github.com/fatih/color"
+	"github.com/heroku/tatara/cli"
+	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
+	"github.com/heroku/tatara/ui"
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/engine/docker"
-	"github.com/fatih/color"
-	"github.com/heroku/tatara/cli"
-	"github.com/heroku/tatara/fs"
-	"github.com/heroku/tatara/ui"
-	"github.com/docker/docker/api/types"
-	dockerClient "github.com/docker/docker/client"
 )
 
 const (
-	BuildStack   = "packs/heroku-16:build"
+	BuildStack = "packs/heroku-16:build"
 )
 
 var cmdBuild = cli.Command{
@@ -42,6 +45,10 @@ var cmdBuild = cli.Command{
 			Name:  "skip-stack-pull",
 			Usage: "Use a local stack image only",
 		},
+		cli.StringSliceFlag{
+			Name:  "env",
+			Usage: "A single environment variable",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -53,12 +60,20 @@ var cmdBuild = cli.Command{
 		appDir := filepath.Clean(c.Args[0])
 		appName := filepath.Clean(c.Args[1])
 		buildpacks := c.Flags.StringSlice("buildpack")
+		envVarsList := c.Flags.StringSlice("env")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
 			stack = BuildStack
 		}
 
+		envVars := make(map[string]string)
+		for _, env := range envVarsList {
+			parts := strings.SplitN(env, "=", 2)
+			name := parts[0]
+			value := parts[1]
+			envVars[name] = value
+		}
 
 		engine, err := docker.New(&engine.EngineConfig{
 			Exit: c.Exit,
@@ -85,14 +100,14 @@ var cmdBuild = cli.Command{
 
 			runDockerfile := herokuConfig.ConstructDockerfile(RunStack)
 			runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
-			err = buildImage(runImageName, runDockerfile)
+			err = buildImageWithDockerfile(runImageName, runDockerfile)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 
 			buildDockerfile := herokuConfig.ConstructDockerfile(stack)
 			buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
-			err = buildImage(buildImageName, buildDockerfile)
+			err = buildImageWithDockerfile(buildImageName, buildDockerfile)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
@@ -100,6 +115,13 @@ var cmdBuild = cli.Command{
 			stack = buildImageName
 		}
 
+		if len(envVars) > 0 {
+			err = applyEnvVars(stack, appName, envVars)
+			if err != nil {
+				return cli.ExitStatusUnknownError, err
+			}
+			stack = appName
+		}
 		slugPath := fmt.Sprintf("./%s.slug", appName)
 		cachePath := fmt.Sprintf("./.%s.cache", appName)
 		appTar, err := app.Tar(appDir, `^.+\.slug$`, `^\..+\.cache$`)
@@ -116,7 +138,7 @@ var cmdBuild = cli.Command{
 		defer cache.Close()
 
 		var app = &forge.AppConfig{
-			Name: appName,
+			Name:       appName,
 			Buildpacks: buildpacks,
 			StagingEnv: map[string]string{
 				"STACK": stack,
@@ -155,9 +177,7 @@ func streamOut(fs fs.FS, stream engine.Stream, path string) error {
 	return stream.Out(file)
 }
 
-func buildImage(appName, dockerfile string) error {
-	fmt.Println(fmt.Sprintf("Building %s", appName))
-
+func buildImageWithDockerfile(appName, dockerfile string) error {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 	defer tw.Close()
@@ -175,7 +195,14 @@ func buildImage(appName, dockerfile string) error {
 	if err != nil {
 		return err
 	}
-	dockerFileTarReader := bytes.NewReader(buf.Bytes())
+
+	return buildImage(appName, buf)
+}
+
+func buildImage(appName string, dockerContext *bytes.Buffer) error {
+	fmt.Println(fmt.Sprintf("Building %s", appName))
+
+	dockerFileTarReader := bytes.NewReader(dockerContext.Bytes())
 
 	buildOptions := types.ImageBuildOptions{
 		Tags:       []string{appName},
@@ -198,4 +225,78 @@ func buildImage(appName, dockerfile string) error {
 
 	fmt.Println(string(response))
 	return nil
+}
+
+func createTar(src string) (*bytes.Buffer, error) {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		header, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+		header.Name = strings.TrimPrefix(strings.Replace(path, src, "", -1), string(filepath.Separator))
+
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+
+		err = tw.WriteHeader(header)
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(path)
+		defer file.Close()
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(tw, file)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return buf, err
+}
+
+func applyEnvVars(stack string, newStack string, env map[string]string) error {
+	tmpDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpDir)
+
+	envDir := fmt.Sprintf("%s/env", tmpDir)
+	err = os.Mkdir(envDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	for name, value := range env {
+		filepath := fmt.Sprintf("%s/%s/%s", tmpDir, "env", name)
+		ioutil.WriteFile(filepath, []byte(value), 0644)
+	}
+	dockerEnvDir := "/tmp/env"
+	dockerfile := fmt.Sprintf(`FROM %s
+COPY env %s
+`, stack, dockerEnvDir)
+	filepath := fmt.Sprintf("%s/Dockerfile", tmpDir)
+	ioutil.WriteFile(filepath, []byte(dockerfile), 0644)
+
+	tar, err := createTar(tmpDir)
+	if err != nil {
+		return err
+	}
+
+	return buildImage(newStack, tar)
 }
