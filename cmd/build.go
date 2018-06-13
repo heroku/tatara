@@ -282,20 +282,20 @@ func applyEnvVars(stack string, newStack string, env map[string]string) error {
 	}
 
 	for name, value := range env {
-		filepath := fmt.Sprintf("%s/%s/%s", tmpDir, "env", name)
-		ioutil.WriteFile(filepath, []byte(value), 0644)
+		filePath := fmt.Sprintf("%s/%s/%s", tmpDir, "env", name)
+		ioutil.WriteFile(filePath, []byte(value), 0644)
 	}
 	dockerEnvDir := "/tmp/env"
 	dockerfile := fmt.Sprintf(`FROM %s
 COPY env %s
 `, stack, dockerEnvDir)
-	filepath := fmt.Sprintf("%s/Dockerfile", tmpDir)
-	ioutil.WriteFile(filepath, []byte(dockerfile), 0644)
+	filePath := fmt.Sprintf("%s/Dockerfile", tmpDir)
+	ioutil.WriteFile(filePath, []byte(dockerfile), 0644)
 
-	tar, err := createTar(tmpDir)
+	tarball, err := createTar(tmpDir)
 	if err != nil {
 		return err
 	}
 
-	return buildImage(newStack, tar)
+	return buildImage(newStack, tarball)
 }
