@@ -14,6 +14,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/fatih/color"
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
@@ -23,7 +24,6 @@ import (
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/engine/docker"
-	"github.com/docker/docker/pkg/jsonmessage"
 )
 
 const (
@@ -121,6 +121,7 @@ var cmdBuild = cli.Command{
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
+			defer cleanUpEnvVarLayer(appName)
 			stack = appName
 		}
 		slugPath := fmt.Sprintf("./%s.slug", appName)
@@ -298,4 +299,25 @@ COPY env %s
 	}
 
 	return buildImage(newStack, tarball)
+}
+
+func cleanUpEnvVarLayer(stack string) error {
+	fmt.Printf("Removing Env Var layer: %s\n", stack)
+	client, err := dockerClient.NewEnvClient()
+	if err != nil {
+		fmt.Printf("Couldn't remove Env Var layer: %s", err.Error())
+		return err
+	}
+
+	removeOptions := types.ImageRemoveOptions{
+		Force: true,
+	}
+
+	_, err = client.ImageRemove(context.Background(), stack, removeOptions)
+	if err != nil {
+		fmt.Printf("Couldn't remove Env Var layer: %s", err.Error())
+		return err
+	}
+
+	return nil
 }
