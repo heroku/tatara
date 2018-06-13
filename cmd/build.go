@@ -23,6 +23,7 @@ import (
 	"github.com/sclevine/forge/app"
 	"github.com/sclevine/forge/engine"
 	"github.com/sclevine/forge/engine/docker"
+	"github.com/docker/docker/pkg/jsonmessage"
 )
 
 const (
@@ -217,13 +218,11 @@ func buildImage(appName string, dockerContext *bytes.Buffer) error {
 	if err != nil {
 		return fmt.Errorf("error starting build: %v", err)
 	}
-	response, err := ioutil.ReadAll(buildResponse.Body)
+
+	err = jsonmessage.DisplayJSONMessagesStream(buildResponse.Body, os.Stdout, 0, false, nil)
 	if err != nil {
 		return err
 	}
-	buildResponse.Body.Close()
-
-	fmt.Println(string(response))
 	return nil
 }
 
