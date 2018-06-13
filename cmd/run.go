@@ -42,6 +42,10 @@ var cmdRun = cli.Command{
 			Name:  "env",
 			Usage: "A single environment variable",
 		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debug logging",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -52,6 +56,7 @@ var cmdRun = cli.Command{
 
 		appName := filepath.Clean(c.Args[0])
 		envVarsList := c.Flags.StringSlice("env")
+		debug := c.Flags.Bool("debug")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
@@ -106,7 +111,9 @@ var cmdRun = cli.Command{
 		herokuConfig, err := heroku.ReadConfig(curDir)
 		if err == nil {
 			imageName := fmt.Sprintf("%s:run", herokuConfig.Id)
-			fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			if debug {
+				fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			}
 			stack = imageName
 		}
 

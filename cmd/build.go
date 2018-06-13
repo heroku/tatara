@@ -50,6 +50,10 @@ var cmdBuild = cli.Command{
 			Name:  "env",
 			Usage: "A single environment variable",
 		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debug logging",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -62,6 +66,7 @@ var cmdBuild = cli.Command{
 		appName := filepath.Clean(c.Args[1])
 		buildpacks := c.Flags.StringSlice("buildpack")
 		envVarsList := c.Flags.StringSlice("env")
+		debug := c.Flags.Bool("debug")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
@@ -99,16 +104,21 @@ var cmdBuild = cli.Command{
 				buildpacks = herokuConfig.ResolveBuildpacks()
 			}
 
+			options := buildImageOptions{
+				Debug:   debug,
+				Verbose: true,
+			}
+
 			runDockerfile := herokuConfig.ConstructDockerfile(RunStack)
 			runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
-			err = buildImageWithDockerfile(runImageName, runDockerfile)
+			err = buildImageWithDockerfile(runImageName, runDockerfile, options)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 
 			buildDockerfile := herokuConfig.ConstructDockerfile(stack)
 			buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
-			err = buildImageWithDockerfile(buildImageName, buildDockerfile)
+			err = buildImageWithDockerfile(buildImageName, buildDockerfile, options)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
@@ -117,7 +127,7 @@ var cmdBuild = cli.Command{
 		}
 
 		if len(envVars) > 0 {
-			err = applyEnvVars(stack, appName, envVars)
+			err = applyEnvVars(stack, appName, envVars, debug)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
@@ -179,7 +189,7 @@ func streamOut(fs fs.FS, stream engine.Stream, path string) error {
 	return stream.Out(file)
 }
 
-func buildImageWithDockerfile(appName, dockerfile string) error {
+func buildImageWithDockerfile(appName, dockerfile string, options buildImageOptions) error {
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
 	defer tw.Close()
@@ -198,11 +208,18 @@ func buildImageWithDockerfile(appName, dockerfile string) error {
 		return err
 	}
 
-	return buildImage(appName, buf)
+	return buildImage(appName, buf, options)
 }
 
-func buildImage(appName string, dockerContext *bytes.Buffer) error {
-	fmt.Println(fmt.Sprintf("Building %s", appName))
+type buildImageOptions struct {
+	Debug   bool
+	Verbose bool
+}
+
+func buildImage(appName string, dockerContext *bytes.Buffer, options buildImageOptions) error {
+	if options.Debug {
+		fmt.Println(fmt.Sprintf("Building %s", appName))
+	}
 
 	dockerFileTarReader := bytes.NewReader(dockerContext.Bytes())
 
@@ -220,10 +237,19 @@ func buildImage(appName string, dockerContext *bytes.Buffer) error {
 		return fmt.Errorf("error starting build: %v", err)
 	}
 
-	err = jsonmessage.DisplayJSONMessagesStream(buildResponse.Body, os.Stdout, 0, false, nil)
-	if err != nil {
-		return err
+	if options.Verbose || options.Debug {
+		err = jsonmessage.DisplayJSONMessagesStream(buildResponse.Body, os.Stdout, 0, false, nil)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := ioutil.ReadAll(buildResponse.Body)
+		if err != nil {
+			return err
+		}
+		buildResponse.Body.Close()
 	}
+
 	return nil
 }
 
@@ -269,7 +295,7 @@ func createTar(src string) (*bytes.Buffer, error) {
 	return buf, err
 }
 
-func applyEnvVars(stack string, newStack string, env map[string]string) error {
+func applyEnvVars(stack string, newStack string, env map[string]string, debug bool) error {
 	tmpDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		return err
@@ -298,11 +324,15 @@ COPY env %s
 		return err
 	}
 
-	return buildImage(newStack, tarball)
+	options := buildImageOptions{
+		Debug:   debug,
+		Verbose: false,
+	}
+
+	return buildImage(newStack, tarball, options)
 }
 
 func cleanUpEnvVarLayer(stack string) error {
-	fmt.Printf("Removing Env Var layer: %s\n", stack)
 	client, err := dockerClient.NewEnvClient()
 	if err != nil {
 		fmt.Printf("Couldn't remove Env Var layer: %s", err.Error())
