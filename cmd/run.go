@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"errors"
 	"strconv"
+	"os"
+	"strings"
 
 	"github.com/sclevine/forge"
 	"github.com/sclevine/forge/engine"
@@ -14,7 +16,6 @@ import (
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/ui"
 	"github.com/heroku/tatara/heroku"
-	"os"
 )
 
 const (
@@ -37,6 +38,10 @@ var cmdRun = cli.Command{
 			Name:  "skip-stack-pull",
 			Usage: "Use a local stack image only",
 		},
+		cli.StringSliceFlag{
+			Name:  "env",
+			Usage: "A single environment variable",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -46,10 +51,19 @@ var cmdRun = cli.Command{
 		}
 
 		appName := filepath.Clean(c.Args[0])
+		envVarsList := c.Flags.StringSlice("env")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
 			stack = RunStack
+		}
+
+		envVars := make(map[string]string)
+		for _, env := range envVarsList {
+			parts := strings.SplitN(env, "=", 2)
+			name := parts[0]
+			value := parts[1]
+			envVars[name] = value
 		}
 
 		port := c.Flags.Int("port")
@@ -67,6 +81,7 @@ var cmdRun = cli.Command{
 
 		app := &forge.AppConfig{
 			Name: appName,
+			RunningEnv: envVars,
 		}
 
 		engine, err := docker.New(&engine.EngineConfig{
