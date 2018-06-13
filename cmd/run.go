@@ -1,24 +1,25 @@
 package main
 
 import (
-	"fmt"
-	"path/filepath"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/engine/docker"
 	"github.com/fatih/color"
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
-	"github.com/heroku/tatara/ui"
 	"github.com/heroku/tatara/heroku"
-	"os"
+	"github.com/heroku/tatara/ui"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/engine/docker"
 )
 
 const (
-	RunStack   = "packs/heroku-16:run"
+	RunStack = "packs/heroku-16:run"
 )
 
 var cmdRun = cli.Command{
@@ -37,6 +38,14 @@ var cmdRun = cli.Command{
 			Name:  "skip-stack-pull",
 			Usage: "Use a local stack image only",
 		},
+		cli.StringSliceFlag{
+			Name:  "env",
+			Usage: "A single environment variable",
+		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debug logging",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -46,10 +55,20 @@ var cmdRun = cli.Command{
 		}
 
 		appName := filepath.Clean(c.Args[0])
+		envVarsList := c.Flags.StringSlice("env")
+		debug := c.Flags.Bool("debug")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
 			stack = RunStack
+		}
+
+		envVars := make(map[string]string)
+		for _, env := range envVarsList {
+			parts := strings.SplitN(env, "=", 2)
+			name := parts[0]
+			value := parts[1]
+			envVars[name] = value
 		}
 
 		port := c.Flags.Int("port")
@@ -66,7 +85,8 @@ var cmdRun = cli.Command{
 		defer slug.Close()
 
 		app := &forge.AppConfig{
-			Name: appName,
+			Name:       appName,
+			RunningEnv: envVars,
 		}
 
 		engine, err := docker.New(&engine.EngineConfig{
@@ -91,7 +111,9 @@ var cmdRun = cli.Command{
 		herokuConfig, err := heroku.ReadConfig(curDir)
 		if err == nil {
 			imageName := fmt.Sprintf("%s:run", herokuConfig.Id)
-			fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			if debug {
+				fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			}
 			stack = imageName
 		}
 

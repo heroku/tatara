@@ -1,16 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
-	"errors"
 
-	"github.com/sclevine/forge/engine"
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine/docker"
 	"github.com/heroku/tatara/ui"
+	"github.com/sclevine/forge"
+	"github.com/sclevine/forge/engine"
+	"github.com/sclevine/forge/engine/docker"
 )
 
 var cmdExport = cli.Command{
@@ -78,11 +78,11 @@ var cmdExport = cli.Command{
 		exporter := forge.NewExporter(engine)
 
 		id, err := exporter.Export(&forge.ExportConfig{
-			Droplet:   slug,
-			Stack:     RunStack,
-			Ref:       tag,
-			RootPath:  "/",
-			HomePath:  "app",
+			Droplet:  slug,
+			Stack:    RunStack,
+			Ref:      tag,
+			RootPath: "/",
+			HomePath: "app",
 			AppConfig: &forge.AppConfig{
 				Name: appName,
 			},

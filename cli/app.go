@@ -27,7 +27,7 @@ type App struct {
 
 	Before func(c *Context) error
 
-	Exit 		<-chan struct{}
+	Exit <-chan struct{}
 }
 
 // Run executed the command with the provided arguments
