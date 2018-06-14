@@ -116,6 +116,12 @@ var cmdBuild = cli.Command{
 
 			runDockerfile := herokuConfig.ConstructDockerfile(RunStack)
 			if len(runDockerfile) > 0 {
+				if !c.Flags.Bool("skip-stack-pull") {
+					err := ui.Loading("Downloading Run Image", engine.NewImage().Pull(RunStack))
+					if err != nil {
+						return cli.ExitStatusUnknownError, err
+					}
+				}
 				runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
 				err = buildImageWithDockerfile(runImageName, runDockerfile, options)
 				if err != nil {
