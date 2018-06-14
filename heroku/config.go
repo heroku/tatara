@@ -57,6 +57,10 @@ func (c *Config) ResolveBuildpacks() []string {
 }
 
 func (c *Config) ConstructDockerfile(stack string) string {
+	if len(c.Build.Pre) <= 0 && len(c.Build.Packages) <= 0 {
+		return ""
+	}
+
 	dockerfile := fmt.Sprintf("FROM %s", stack)
 	for _, command := range c.Build.Pre {
 		dockerfile += fmt.Sprintf(`

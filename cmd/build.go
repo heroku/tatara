@@ -115,20 +115,30 @@ var cmdBuild = cli.Command{
 			}
 
 			runDockerfile := herokuConfig.ConstructDockerfile(RunStack)
-			runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
-			err = buildImageWithDockerfile(runImageName, runDockerfile, options)
-			if err != nil {
-				return cli.ExitStatusUnknownError, err
+			if len(runDockerfile) > 0 {
+				if !c.Flags.Bool("skip-stack-pull") {
+					err := ui.Loading("Downloading Run Image", engine.NewImage().Pull(RunStack))
+					if err != nil {
+						return cli.ExitStatusUnknownError, err
+					}
+				}
+				runImageName := fmt.Sprintf("%s:run", herokuConfig.Id)
+				err = buildImageWithDockerfile(runImageName, runDockerfile, options)
+				if err != nil {
+					return cli.ExitStatusUnknownError, err
+				}
 			}
 
 			buildDockerfile := herokuConfig.ConstructDockerfile(buildStack)
-			buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
-			err = buildImageWithDockerfile(buildImageName, buildDockerfile, options)
-			if err != nil {
-				return cli.ExitStatusUnknownError, err
-			}
+			if len(buildDockerfile) > 0 {
+				buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
+				err = buildImageWithDockerfile(buildImageName, buildDockerfile, options)
+				if err != nil {
+					return cli.ExitStatusUnknownError, err
+				}
 
-			buildStack = buildImageName
+				buildStack = buildImageName
+			}
 		}
 
 		if len(envVars) > 0 {
