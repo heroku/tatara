@@ -27,8 +27,12 @@ import (
 )
 
 const (
-	BuildStack = "packs/heroku-16:build"
+	HerokuStack = "heroku-16"
 )
+
+func BuildStack(stack string) string {
+	return fmt.Sprintf("packs/%s:build", stack)
+}
 
 var cmdBuild = cli.Command{
 	Name: "build",
@@ -40,7 +44,7 @@ var cmdBuild = cli.Command{
 		},
 		cli.StringFlag{
 			Name:  "stack",
-			Usage: "The name of the packs stack image to use",
+			Usage: "The name of the Heroku stack image to use",
 		},
 		cli.BoolFlag{
 			Name:  "skip-stack-pull",
@@ -70,8 +74,9 @@ var cmdBuild = cli.Command{
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
-			stack = BuildStack
+			stack = HerokuStack
 		}
+		buildStack := BuildStack(stack)
 
 		envVars := make(map[string]string)
 		for _, env := range envVarsList {
@@ -92,7 +97,7 @@ var cmdBuild = cli.Command{
 		stager := forge.NewStager(engine)
 
 		if !c.Flags.Bool("skip-stack-pull") {
-			err := ui.Loading("Downloading Build Image", engine.NewImage().Pull(stack))
+			err := ui.Loading("Downloading Build Image", engine.NewImage().Pull(buildStack))
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
@@ -116,23 +121,23 @@ var cmdBuild = cli.Command{
 				return cli.ExitStatusUnknownError, err
 			}
 
-			buildDockerfile := herokuConfig.ConstructDockerfile(stack)
+			buildDockerfile := herokuConfig.ConstructDockerfile(buildStack)
 			buildImageName := fmt.Sprintf("%s:build", herokuConfig.Id)
 			err = buildImageWithDockerfile(buildImageName, buildDockerfile, options)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 
-			stack = buildImageName
+			buildStack = buildImageName
 		}
 
 		if len(envVars) > 0 {
-			err = applyEnvVars(stack, appName, envVars, debug)
+			err = applyEnvVars(buildStack, appName, envVars, debug)
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
 			}
 			defer cleanUpEnvVarLayer(appName)
-			stack = appName
+			buildStack = appName
 		}
 		slugPath := fmt.Sprintf("./%s.slug", appName)
 		cachePath := fmt.Sprintf("./.%s.cache", appName)
@@ -162,7 +167,7 @@ var cmdBuild = cli.Command{
 			Cache:         cache,
 			CacheEmpty:    cacheSize == 0,
 			BuildpackZips: nil,
-			Stack:         stack,
+			Stack:         buildStack,
 			Color:         color.GreenString,
 			AppConfig:     app,
 			OutputPath:    "/out/slug.tgz",
