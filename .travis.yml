@@ -9,8 +9,8 @@ install:
 - mkdir -p $GOPATH/bin
 - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 - dep ensure
-- go get github.com/sclevine/forge
-- cd $GOPATH/src/github.com/sclevine/forge
+- go get github.com/buildpack/forge
+- cd $GOPATH/src/github.com/buildpack/forge
 - git remote add fork https://github.com/jkutner/forge
 - git fetch fork
 - git reset --hard fork/refactor-jkutner
