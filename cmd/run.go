@@ -134,6 +134,7 @@ var cmdRun = cli.Command{
 			AppConfig:     app,
 			NetworkConfig: netConfig,
 			WorkingDir:    "/app",
+			OutputDir:     "/",
 		})
 
 		if err != nil {
