@@ -8,9 +8,9 @@ import (
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/ui"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/engine/docker"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/engine"
+	"github.com/buildpack/forge/engine/docker"
 )
 
 var cmdExport = cli.Command{
@@ -78,12 +78,11 @@ var cmdExport = cli.Command{
 		exporter := forge.NewExporter(engine)
 
 		id, err := exporter.Export(&forge.ExportConfig{
-			Droplet:  slug,
-			Stack:    RunStack,
-			Ref:      tag,
-			RootPath: "/",
-			HomePath: "app",
-			AppConfig: &forge.AppConfig{
+			Droplet:    slug,
+			Stack:      RunStack,
+			Ref:        tag,
+			WorkingDir: "/app",
+			AppConfig:  &forge.AppConfig{
 				Name: appName,
 			},
 		})

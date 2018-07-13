@@ -20,10 +20,10 @@ import (
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/app"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/engine/docker"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/app"
+	"github.com/buildpack/forge/engine"
+	"github.com/buildpack/forge/engine/docker"
 )
 
 const (

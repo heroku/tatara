@@ -13,9 +13,9 @@ import (
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
-	"github.com/sclevine/forge"
-	"github.com/sclevine/forge/engine"
-	"github.com/sclevine/forge/engine/docker"
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/engine"
+	"github.com/buildpack/forge/engine/docker"
 )
 
 const (
@@ -118,9 +118,9 @@ var cmdRun = cli.Command{
 		}
 
 		netConfig := &forge.NetworkConfig{
-			HostIP:   "127.0.0.1",
-			HostPort: strconv.FormatUint(uint64(port), 10),
-			Port:     strconv.FormatUint(uint64(port), 10),
+			HostIP:        "127.0.0.1",
+			HostPort:      strconv.FormatUint(uint64(port), 10),
+			ContainerPort: strconv.FormatUint(uint64(port), 10),
 		}
 
 		runner := forge.NewRunner(engine)
@@ -133,7 +133,8 @@ var cmdRun = cli.Command{
 			Color:         color.GreenString,
 			AppConfig:     app,
 			NetworkConfig: netConfig,
-			RootPath:      "/",
+			WorkingDir:    "/app",
+			OutputDir:     "/",
 		})
 
 		if err != nil {

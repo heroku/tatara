@@ -129,6 +129,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/buildpack/forge"
+  packages = ["engine"]
+  revision = "a40ca31b42916dec4801a718cba652e80b25db68"
+
+[[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
@@ -169,6 +175,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2ebc543adcd07ec4a9ad3781501f09671d62828b23cf1b8a1373138d25633c78"
+  inputs-digest = "5d2192e9d8afb8626bf5016405976ed794ba30a137b560917884774c8c1268a3"
   solver-name = "gps-cdcl"
   solver-version = 1
