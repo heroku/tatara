@@ -30,6 +30,10 @@ var cmdRun = cli.Command{
 			Name:  "stack",
 			Usage: "The name of the packs stack image to use",
 		},
+		cli.StringFlag{
+			Name:  "process-type",
+			Usage: "The process type command to run",
+		},
 		cli.IntFlag{
 			Name:  "port",
 			Usage: "The local port to use",
@@ -61,6 +65,11 @@ var cmdRun = cli.Command{
 		stack := c.Flags.String("stack")
 		if stack == "" {
 			stack = RunStack
+		}
+
+		processType := c.Flags.String("process-type")
+		if processType == "" {
+			processType = "web"
 		}
 
 		envVars := make(map[string]string)
@@ -135,6 +144,7 @@ var cmdRun = cli.Command{
 			NetworkConfig: netConfig,
 			WorkingDir:    "/app",
 			OutputDir:     "/",
+			Script:        fmt.Sprintf("/packs/launcher -processType %s", processType),
 		})
 
 		if err != nil {
