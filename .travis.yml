@@ -11,6 +11,8 @@ install:
 - dep ensure
 - go get github.com/buildpack/forge
 - cd $GOPATH/src/github.com/buildpack/forge
+- git fetch
+- git checkout run-script
 - dep ensure
 - cd -
 before_script:
