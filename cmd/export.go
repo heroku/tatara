@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/heroku/tatara/cli"
-	"github.com/heroku/tatara/fs"
-	"github.com/heroku/tatara/ui"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/engine"
 	"github.com/buildpack/forge/engine/docker"
+	"github.com/heroku/tatara/cli"
+	"github.com/heroku/tatara/fs"
+	"github.com/heroku/tatara/ui"
 )
 
 var cmdExport = cli.Command{
@@ -82,7 +82,8 @@ var cmdExport = cli.Command{
 			Stack:      RunStack,
 			Ref:        tag,
 			WorkingDir: "/app",
-			AppConfig:  &forge.AppConfig{
+			OutputDir:  "/",
+			AppConfig: &forge.AppConfig{
 				Name: appName,
 			},
 		})
