@@ -11,6 +11,9 @@ install:
 - dep ensure
 - go get github.com/buildpack/forge
 - cd $GOPATH/src/github.com/buildpack/forge
+- git remote add fork https://github.com/jkutner/forge
+- git fetch fork
+- git reset --hard fork/master
 - dep ensure
 - cd -
 before_script:
