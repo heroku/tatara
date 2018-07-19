@@ -34,6 +34,10 @@ var cmdRun = cli.Command{
 			Name:  "process-type",
 			Usage: "The process type of the container",
 		},
+		cli.BoolFlag{
+			Name:  "shell",
+			Usage: "Enable shell access to the container",
+		},
 		cli.IntFlag{
 			Name:  "port",
 			Usage: "The local port to use",
@@ -61,6 +65,7 @@ var cmdRun = cli.Command{
 		appName := filepath.Clean(c.Args[0])
 		envVarsList := c.Flags.StringSlice("env")
 		debug := c.Flags.Bool("debug")
+		shell := c.Flags.Bool("shell")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
@@ -144,6 +149,7 @@ var cmdRun = cli.Command{
 			NetworkConfig: netConfig,
 			WorkingDir:    "/app",
 			OutputDir:     "/",
+			Shell:         shell,
 		})
 
 		if err != nil {
