@@ -30,6 +30,10 @@ var cmdRun = cli.Command{
 			Name:  "stack",
 			Usage: "The name of the packs stack image to use",
 		},
+		cli.StringFlag{
+			Name:  "process-type",
+			Usage: "The process type of the container",
+		},
 		cli.IntFlag{
 			Name:  "port",
 			Usage: "The local port to use",
@@ -69,6 +73,11 @@ var cmdRun = cli.Command{
 			name := parts[0]
 			value := parts[1]
 			envVars[name] = value
+		}
+
+		processType := c.Flags.String("process-type")
+		if processType != "" {
+			envVars["DYNO"] = fmt.Sprintf("%s.1", processType)
 		}
 
 		port := c.Flags.Int("port")
