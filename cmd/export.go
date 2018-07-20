@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"os"
 
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/engine"
@@ -11,6 +12,7 @@ import (
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/ui"
+	"github.com/heroku/tatara/heroku"
 )
 
 var cmdExport = cli.Command{
@@ -29,6 +31,10 @@ var cmdExport = cli.Command{
 			Name:  "skip-stack-pull",
 			Usage: "Use a local stack image only",
 		},
+		cli.BoolFlag{
+			Name:  "debug",
+			Usage: "Enable debug logging",
+		},
 	},
 
 	Run: func(c *cli.Context) (int, error) {
@@ -38,6 +44,7 @@ var cmdExport = cli.Command{
 		}
 
 		appName := filepath.Clean(c.Args[0])
+		debug := c.Flags.Bool("debug")
 
 		stack := c.Flags.String("stack")
 		if stack == "" {
@@ -75,11 +82,25 @@ var cmdExport = cli.Command{
 			}
 		}
 
+		curDir, err := os.Getwd()
+		if err != nil {
+			return cli.ExitStatusUnknownError, err
+		}
+
+		herokuConfig, err := heroku.ReadConfig(curDir)
+		if err == nil {
+			imageName := fmt.Sprintf("%s:run", herokuConfig.Id)
+			if debug {
+				fmt.Println(fmt.Sprintf("Using image: %s", imageName))
+			}
+			stack = imageName
+		}
+
 		exporter := forge.NewExporter(engine)
 
 		id, err := exporter.Export(&forge.ExportConfig{
 			Droplet:    slug,
-			Stack:      RunStack,
+			Stack:      stack,
 			Ref:        tag,
 			WorkingDir: "/app",
 			OutputDir:  "/",
