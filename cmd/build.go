@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"runtime"
+	"os/exec"
 
 	"github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
@@ -100,6 +102,24 @@ var cmdBuild = cli.Command{
 			err := ui.Loading("Downloading Build Image", engine.NewImage().Pull(buildStack))
 			if err != nil {
 				return cli.ExitStatusUnknownError, err
+			}
+		}
+
+		if runtime.GOOS == "windows" {
+			cmd := exec.Command("git", "config", "core.autocrlf")
+			stdout, err := cmd.Output()
+			if err == nil {
+				autocrlf := strings.TrimSpace(string(stdout))
+				if autocrlf == "true" {
+					fmt.Println(`WARNING: Git core.autcrlf is enabled, which may cause unexpected errors in Bash
+         scripts. It is recommended that you disable this feature by running:
+
+           C:\> git config --global core.autocrlf false
+
+         The rewrite the Git index to pick up all the new line endings by
+         running 'git reset' on your repo.
+`)
+				}
 			}
 		}
 
