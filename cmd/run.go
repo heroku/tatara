@@ -13,6 +13,7 @@ import (
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
+	"github.com/heroku/tatara/util"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/engine"
 	"github.com/buildpack/forge/engine/docker"
@@ -117,6 +118,9 @@ var cmdRun = cli.Command{
 				return cli.ExitStatusUnknownError, err
 			}
 		}
+
+		util.WarnIfGitAutoCrlfEnabled()
+
 		curDir, err := os.Getwd()
 		if err != nil {
 			return cli.ExitStatusUnknownError, err

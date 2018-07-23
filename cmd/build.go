@@ -11,8 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"runtime"
-	"os/exec"
 
 	"github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
@@ -22,6 +20,7 @@ import (
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
+	"github.com/heroku/tatara/util"
 	"github.com/buildpack/forge"
 	"github.com/buildpack/forge/app"
 	"github.com/buildpack/forge/engine"
@@ -105,23 +104,7 @@ var cmdBuild = cli.Command{
 			}
 		}
 
-		if runtime.GOOS == "windows" {
-			cmd := exec.Command("git", "config", "core.autocrlf")
-			stdout, err := cmd.Output()
-			if err == nil {
-				autocrlf := strings.TrimSpace(string(stdout))
-				if autocrlf == "true" {
-					fmt.Println(`WARNING: Git core.autcrlf is enabled, which may cause unexpected errors in Bash
-         scripts. It is recommended that you disable this feature by running:
-
-           C:\> git config --global core.autocrlf false
-
-         The rewrite the Git index to pick up all the new line endings by
-         running 'git reset' on your repo.
-`)
-				}
-			}
-		}
+		util.WarnIfGitAutoCrlfEnabled()
 
 		herokuConfig, err := heroku.ReadConfig(appDir)
 		if err == nil {
