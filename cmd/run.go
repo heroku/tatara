@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/engine"
+	"github.com/buildpack/forge/engine/docker"
 	"github.com/fatih/color"
 	"github.com/heroku/tatara/cli"
 	"github.com/heroku/tatara/fs"
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
 	"github.com/heroku/tatara/util"
-	"github.com/buildpack/forge"
-	"github.com/buildpack/forge/engine"
-	"github.com/buildpack/forge/engine/docker"
 )
 
 const (
@@ -87,7 +87,9 @@ var cmdRun = cli.Command{
 		}
 
 		port := c.Flags.Int("port")
-		if port == 0 {
+		if port != 0 {
+			envVars["PORT"] = strconv.FormatUint(uint64(port), 10)
+		} else if !shell && (processType == "" || processType == "web") {
 			port = 5000
 		}
 
@@ -136,15 +138,21 @@ var cmdRun = cli.Command{
 		}
 
 		netConfig := &forge.NetworkConfig{
-			HostIP:        "127.0.0.1",
-			HostPort:      strconv.FormatUint(uint64(port), 10),
-			ContainerPort: strconv.FormatUint(uint64(port), 10),
+			HostIP: "127.0.0.1",
+		}
+		if port > 0 {
+			netConfig.HostPort = strconv.FormatUint(uint64(port), 10)
+			netConfig.ContainerPort = strconv.FormatUint(uint64(port), 10)
 		}
 
 		runner := forge.NewRunner(engine)
 		runner.Logs = color.Output
 
-		fmt.Println(fmt.Sprintf("Running %s on port %d...", appName, port))
+		if port > 0 {
+			fmt.Println(fmt.Sprintf("Running %s on port %d...", appName, port))
+		} else {
+			fmt.Println(fmt.Sprintf("Running %s...", appName))
+		}
 		_, err = runner.Run(&forge.RunConfig{
 			Droplet:       slug,
 			Stack:         stack,
