@@ -89,6 +89,8 @@ var cmdRun = cli.Command{
 		port := c.Flags.Int("port")
 		if port == 0 {
 			port = 5000
+		} else {
+			envVars["PORT"] = strconv.FormatUint(uint64(port), 10)
 		}
 
 		sysFS := &fs.FS{}
