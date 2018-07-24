@@ -106,7 +106,6 @@ var cmdExport = cli.Command{
 			OutputDir:  "/",
 			AppConfig: &forge.AppConfig{
 				Name:    appName,
-				Command: "/packs/launcher",
 			},
 		})
 
