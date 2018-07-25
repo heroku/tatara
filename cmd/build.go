@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/tar"
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -155,20 +154,7 @@ var cmdBuild = cli.Command{
 		}
 		slugPath := fmt.Sprintf("./%s.slug", appName)
 		cachePath := fmt.Sprintf("./.%s.cache", appName)
-		var excludes []string
-		artifacts := []string{`^.+\.slug$`, `^\..+\.cache$`}
-		excludes = append(excludes, artifacts...)
-		for _, filename := range []string{"./.gitignore", "./.slugignore"} {
-			if _, err := os.Stat(filename); err == nil {
-				if file, err := os.Open(filename); err == nil {
-					scanner := bufio.NewScanner(file)
-					for scanner.Scan() {
-						excludes = append(excludes, scanner.Text())
-					}
-				}
-			}
-		}
-		appTar, err := app.Tar(appDir, excludes...)
+		appTar, err := app.Tar(appDir, `^.+\.slug$`, `^\..+\.cache$`)
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
