@@ -10,8 +10,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/buildpack/forge"
+	"github.com/buildpack/forge/engine"
+	"github.com/buildpack/forge/engine/docker"
 	"github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -21,10 +25,7 @@ import (
 	"github.com/heroku/tatara/heroku"
 	"github.com/heroku/tatara/ui"
 	"github.com/heroku/tatara/util"
-	"github.com/buildpack/forge"
-	"github.com/buildpack/forge/app"
-	"github.com/buildpack/forge/engine"
-	"github.com/buildpack/forge/engine/docker"
+	ignore "github.com/sabhiram/go-gitignore"
 )
 
 const (
@@ -154,11 +155,10 @@ var cmdBuild = cli.Command{
 		}
 		slugPath := fmt.Sprintf("./%s.slug", appName)
 		cachePath := fmt.Sprintf("./.%s.cache", appName)
-		appTar, err := app.Tar(appDir, `^.+\.slug$`, `^\..+\.cache$`)
+		appTar, err := TarApp(appDir)
 		if err != nil {
 			return cli.ExitStatusUnknownError, err
 		}
-		defer appTar.Close()
 
 		sysFS := &fs.FS{}
 		cache, cacheSize, err := sysFS.OpenFile(cachePath)
@@ -368,4 +368,70 @@ func cleanUpEnvVarLayer(stack string) error {
 	}
 
 	return nil
+}
+
+// copide mostly from https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07
+func TarApp(path string) (io.Reader, error) {
+	var buf bytes.Buffer
+	tarWriter := tar.NewWriter(&buf)
+	defer tarWriter.Close()
+
+	gitignore, gitignoreErr := ignore.CompileIgnoreFile(fmt.Sprintf("%s/.gitignore", path))
+	slugignore, slugignoreErr := ignore.CompileIgnoreFile(fmt.Sprintf("%s/.slugignore", path))
+
+	err := filepath.Walk(path, func(file string, fileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relpath, err := filepath.Rel(path, file)
+		if err != nil {
+			return err
+		}
+
+		excludes := []string{`^.+\.slug$`, `^\..+\.cache$`}
+		for _, excludePattern := range excludes {
+			if regexp.MustCompile(excludePattern).MatchString(relpath) {
+				return nil
+			}
+		}
+
+		if gitignoreErr == nil && gitignore.MatchesPath(relpath) {
+			return nil
+		}
+
+		if slugignoreErr == nil && slugignore.MatchesPath(relpath) {
+			return nil
+		}
+
+		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
+		if err != nil {
+			return err
+		}
+
+		header.Name = strings.TrimPrefix(strings.Replace(file, path, "", -1), string(filepath.Separator))
+
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+
+		if !fileInfo.Mode().IsRegular() {
+			return nil
+		}
+
+		f, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+
+		if _, err := io.Copy(tarWriter, f); err != nil {
+			return err
+		}
+
+		f.Close()
+
+		return nil
+	})
+
+	return &buf, err
 }
