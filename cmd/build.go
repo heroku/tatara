@@ -389,6 +389,14 @@ func TarApp(path string) (io.Reader, error) {
 			return err
 		}
 
+		// need to append "/" to directories, so directories will get ignored
+		// if the user lists a "/" at the end of their directory
+		if dirInfo, err := os.Stat(file); err != nil {
+			return err
+		} else if dirInfo.IsDir() {
+			relpath += "/"
+		}
+
 		excludes := []string{`^.+\.slug$`, `^\..+\.cache$`}
 		for _, excludePattern := range excludes {
 			if regexp.MustCompile(excludePattern).MatchString(relpath) {
