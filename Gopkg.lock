@@ -129,10 +129,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/buildpack/forge"
-  packages = ["engine"]
-  revision = "a40ca31b42916dec4801a718cba652e80b25db68"
+  name = "github.com/sabhiram/go-gitignore"
+  packages = ["."]
+  revision = "d3107576ba9425fc1c85f4b3569c4631b805a02e"
+  version = "1.0.2"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -175,6 +175,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5d2192e9d8afb8626bf5016405976ed794ba30a137b560917884774c8c1268a3"
+  inputs-digest = "13ab2be708c535e3543f268272e54c99c3de34f259cceb7149f43babcc6f556b"
   solver-name = "gps-cdcl"
   solver-version = 1
