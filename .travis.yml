@@ -3,19 +3,10 @@ language: go
 services:
 - docker
 go:
-- 1.10.x
+- 1.11.x
 go_import_path: github.com/heroku/tatara
 install:
-- mkdir -p $GOPATH/bin
-- curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-- dep ensure
-- go get github.com/buildpack/forge
-- cd $GOPATH/src/github.com/buildpack/forge
-- git remote add fork https://github.com/jkutner/forge
-- git fetch fork
-- git reset --hard fork/master
-- dep ensure
-- cd -
+- go mod vendor
 before_script:
 - export VERSION="$(cat VERSION)"
 script:
@@ -26,14 +17,17 @@ matrix:
   include:
   - os: linux
     env:
+      GO111MODULE: "on"
       TARGET_OS: windows
       OUTPUT_EXT: windows.exe
   - os: linux
     env:
+      GO111MODULE: "on"
       TARGET_OS: linux
       OUTPUT_EXT: linux
   - os: osx
     env:
+      GO111MODULE: "on"
       TARGET_OS: darwin
       OUTPUT_EXT: macos
 deploy:
