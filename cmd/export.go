@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"os"
 
-	"github.com/buildpack/forge"
+	forge "github.com/buildpack/forge/v2"
 	"github.com/buildpack/forge/engine"
 	"github.com/buildpack/forge/engine/docker"
 	"github.com/heroku/tatara/cli"

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/buildpack/forge"
+	forge "github.com/buildpack/forge/v2"
 	"github.com/buildpack/forge/engine"
 	"github.com/buildpack/forge/engine/docker"
 	"github.com/fatih/color"
